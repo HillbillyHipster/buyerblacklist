@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 const SUPABASE_URL = "https://khdfxefaiztdhvfarkvp.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZGZ4ZWZhaXp0ZGh2ZmFya3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTE0NTAsImV4cCI6MjA5MzU2NzQ1MH0.JxDjCUhbNxBfQm6KobZ7dkDeJ2assUNj8-zSeJrYKwY";
-const ADSENSE_PUB = "pub-2061049202248782";
+const ADSENSE_PUB = "ca-pub-2061049202248782";
 
 const db = {
   async get(table, params = "") {
@@ -64,23 +64,12 @@ const SEED_REPORTS = [
 const CATEGORIES = ["All", "False INAD Claim", "Feedback Extortion", "Non-Payment", "Return Fraud", "Chargeback Abuse", "Item Switching", "Other"];
 const SEVERITIES = { high: { label: "High Risk", color: "#ff3b3b" }, medium: { label: "Medium Risk", color: "#ff8c00" }, low: { label: "Low Risk", color: "#f0c040" } };
 
-// Browser-local session username
-const getSession = () => {
-  try {
-    const s = localStorage.getItem("bbl_session");
-    return s ? JSON.parse(s) : null;
-  } catch { return null; }
-};
+const getSession = () => { try { const s = localStorage.getItem("bbl_session"); return s ? JSON.parse(s) : null; } catch { return null; } };
 const saveSession = (data) => localStorage.setItem("bbl_session", JSON.stringify(data));
-const getVoterId = () => {
-  let id = localStorage.getItem("voter_id");
-  if (!id) { id = Math.random().toString(36).slice(2); localStorage.setItem("voter_id", id); }
-  return id;
-};
+const getVoterId = () => { let id = localStorage.getItem("voter_id"); if (!id) { id = Math.random().toString(36).slice(2); localStorage.setItem("voter_id", id); } return id; };
 
-// AdSense Banner component
 const AdBanner = ({ slot = "horizontal" }) => (
-  <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 4, padding: "12px", textAlign: "center", margin: "20px 0", position: "relative" }}>
+  <div style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 4, padding: "12px", textAlign: "center", margin: "16px 0" }}>
     <div style={{ fontSize: 9, color: "#333", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 6 }}>Advertisement</div>
     <ins className="adsbygoogle"
       style={{ display: "block", minHeight: slot === "horizontal" ? 90 : 250 }}
@@ -109,14 +98,14 @@ export default function App() {
   const [error, setError] = useState(null);
   const [session, setSession] = useState(getSession());
   const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState("register"); // register | login
+  const [authMode, setAuthMode] = useState("register");
   const [authForm, setAuthForm] = useState({ username: "", password: "" });
   const [authError, setAuthError] = useState("");
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(!!localStorage.getItem("bbl_disclaimer"));
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => { loadReports(); }, []);
 
-  // Inject AdSense script once
   useEffect(() => {
     if (!document.querySelector(`script[src*="adsbygoogle"]`)) {
       const s = document.createElement("script");
@@ -174,7 +163,6 @@ export default function App() {
     if (authForm.username.length < 3) { setAuthError("Username must be at least 3 characters."); return; }
     if (authForm.password.length < 6) { setAuthError("Password must be at least 6 characters."); return; }
     if (authMode === "register") {
-      // Check if username taken
       const existing = await db.get("users", `username=eq.${encodeURIComponent(authForm.username)}&select=id`);
       if (Array.isArray(existing) && existing.length > 0) { setAuthError("Username already taken."); return; }
       const result = await db.insert("users", { username: authForm.username, password_hash: btoa(authForm.password) });
@@ -222,7 +210,7 @@ export default function App() {
     setCommentText(""); loadComments(reportId);
   };
 
-  const openDetail = (report) => { setSelectedReport(report); loadComments(report.id); setView("detail"); };
+  const openDetail = (report) => { setSelectedReport(report); loadComments(report.id); setView("detail"); window.scrollTo(0, 0); };
   const norm = (r) => ({ ...r, buyerUsername: r.buyer_username || r.buyerUsername, date: r.created_at ? r.created_at.split("T")[0] : r.date });
 
   const filteredReports = reports.map(norm).filter(r => {
@@ -237,31 +225,32 @@ export default function App() {
     </div>
   );
 
-  // Disclaimer gate
+  const navTo = (v) => { setView(v); setMobileMenuOpen(false); window.scrollTo(0, 0); };
+
   if (!disclaimerAccepted) return (
-    <div style={{ fontFamily: "'Georgia', serif", background: "#0d0d0d", minHeight: "100vh", color: "#e8e0d0", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+    <div style={{ fontFamily: "'Georgia', serif", background: "#0d0d0d", minHeight: "100vh", color: "#e8e0d0", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:wght@300;400;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; }`}</style>
       <div style={{ maxWidth: 580, width: "100%" }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900 }}><span style={{ color: "#c0392b" }}>⚑</span> BuyerBlacklist</div>
-          <div style={{ fontSize: 12, color: "#555", letterSpacing: "2px", textTransform: "uppercase", marginTop: 4 }}>Before You Enter</div>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900 }}><span style={{ color: "#c0392b" }}>⚑</span> BuyerBlacklist</div>
+          <div style={{ fontSize: 11, color: "#555", letterSpacing: "2px", textTransform: "uppercase", marginTop: 4 }}>Before You Enter</div>
         </div>
-        <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 4, padding: 28, marginBottom: 20 }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, marginBottom: 16, color: "#e8e0d0" }}>Terms of Use & Disclaimer</h2>
-          <div style={{ fontSize: 13, color: "#777", lineHeight: 1.9, maxHeight: 320, overflowY: "auto", paddingRight: 8 }}>
-            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>User-Generated Content Platform.</strong> BuyerBlacklist.com is an interactive computer service that provides a platform for users to publish their own firsthand experiences and opinions. All content posted on this platform is authored solely by the individual users who post it.</p>
-            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>Section 230 Protection.</strong> This platform operates under the protections of 47 U.S.C. § 230 of the Communications Decency Act ("CDA"). BuyerBlacklist.com is not the publisher or speaker of any user-submitted content. We are not liable for content provided by third-party users. The views, opinions, statements, and experiences expressed in any post are solely those of the individual author and do not represent the views or opinions of BuyerBlacklist.com, its owners, operators, or affiliates.</p>
-            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>No Endorsement.</strong> BuyerBlacklist.com does not verify, endorse, guarantee, or warrant the accuracy, completeness, timeliness, or reliability of any content posted by users. The presence of a username on this platform does not constitute a finding of fact, legal determination, or official record of wrongdoing.</p>
-            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>Your Responsibility.</strong> By posting content, you affirm that it is your honest, firsthand account of your personal experience. You are solely responsible for the content you publish. You agree not to post false, fabricated, or maliciously misleading content. Abuse of this platform may result in removal of content and/or legal liability to you personally.</p>
-            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>No Legal Advice.</strong> Nothing on this platform constitutes legal advice. If you believe you have been defamed or harassed, consult a licensed attorney.</p>
-            <p><strong style={{ color: "#aaa" }}>Content Removal.</strong> If you believe content about you is false and defamatory, you may submit a removal request to legal@badbuyerblacklist.com. We will review requests in good faith.</p>
+        <div style={{ background: "#111", border: "1px solid #2a2a2a", borderRadius: 4, padding: 20, marginBottom: 16 }}>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, marginBottom: 14, color: "#e8e0d0" }}>Terms of Use & Disclaimer</h2>
+          <div style={{ fontSize: 13, color: "#777", lineHeight: 1.9, maxHeight: 280, overflowY: "auto", paddingRight: 8 }}>
+            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>User-Generated Content Platform.</strong> BuyerBlacklist.com is an interactive computer service that provides a platform for users to publish their own firsthand experiences and opinions.</p>
+            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>Section 230 Protection.</strong> This platform operates under the protections of 47 U.S.C. § 230 of the Communications Decency Act. BuyerBlacklist.com is not the publisher or speaker of any user-submitted content.</p>
+            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>No Endorsement.</strong> BuyerBlacklist.com does not verify, endorse, or warrant the accuracy of any content posted by users.</p>
+            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>Your Responsibility.</strong> By posting content, you affirm it is your honest, firsthand account. You are solely responsible for content you publish.</p>
+            <p style={{ marginBottom: 12 }}><strong style={{ color: "#aaa" }}>No Legal Advice.</strong> Nothing on this platform constitutes legal advice.</p>
+            <p><strong style={{ color: "#aaa" }}>Content Removal.</strong> Submit removal requests to legal@badbuyerblacklist.com.</p>
           </div>
         </div>
         <button onClick={() => { localStorage.setItem("bbl_disclaimer", "1"); setDisclaimerAccepted(true); }}
           style={{ width: "100%", background: "#c0392b", color: "white", border: "none", padding: "16px", fontFamily: "'Source Serif 4', serif", fontSize: 15, borderRadius: 3, cursor: "pointer" }}>
           I Understand & Agree — Enter Site
         </button>
-        <div style={{ fontSize: 11, color: "#333", textAlign: "center", marginTop: 12 }}>By entering you agree to our Terms of Use, Privacy Policy, and Disclaimer</div>
+        <div style={{ fontSize: 11, color: "#333", textAlign: "center", marginTop: 10 }}>By entering you agree to our Terms of Use, Privacy Policy, and Disclaimer</div>
       </div>
     </div>
   );
@@ -281,35 +270,45 @@ export default function App() {
         input, textarea, select { background: #1e1e1e; border: 1px solid #333; color: #e8e0d0; padding: 10px 14px; font-family: 'Source Serif 4', serif; font-size: 14px; border-radius: 3px; width: 100%; outline: none; transition: border-color 0.2s; }
         input:focus, textarea:focus, select:focus { border-color: #c0392b; }
         select option { background: #1e1e1e; }
-        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
-        .nav-item { cursor: pointer; padding: 8px 12px; color: #888; font-family: 'Source Serif 4', serif; font-size: 13px; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; }
+        .nav-item { cursor: pointer; padding: 8px 10px; color: #888; font-family: 'Source Serif 4', serif; font-size: 13px; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
         .nav-item:hover { color: #e8e0d0; } .nav-item.active { color: #e8e0d0; border-bottom-color: #c0392b; }
-        .upvote-btn { background: transparent; border: 1px solid #333; color: #888; padding: 6px 12px; cursor: pointer; border-radius: 3px; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .upvote-btn { background: transparent; border: 1px solid #333; color: #888; padding: 6px 10px; cursor: pointer; border-radius: 3px; font-size: 12px; transition: all 0.2s; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
         .upvote-btn:hover, .upvote-btn.active { border-color: #c0392b; color: #c0392b; }
-        .username-tag { font-family: 'Courier New', monospace; background: #1e1e1e; border: 1px solid #333; padding: 2px 8px; border-radius: 3px; font-size: 13px; color: #e0c080; }
-        .verified-badge { display: inline-flex; align-items: center; gap: 4px; color: #4caf50; font-size: 11px; }
+        .username-tag { font-family: 'Courier New', monospace; background: #1e1e1e; border: 1px solid #333; padding: 2px 7px; border-radius: 3px; font-size: 12px; color: #e0c080; word-break: break-all; }
+        .verified-badge { display: inline-flex; align-items: center; gap: 4px; color: #4caf50; font-size: 10px; }
         .spinner { display: inline-block; width: 32px; height: 32px; border: 2px solid #333; border-top-color: #c0392b; border-radius: 50%; animation: spin 0.7s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; }
-        .modal { background: #161616; border: 1px solid #333; border-radius: 6px; padding: 32px; width: 100%; max-width: 420px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .modal { background: #161616; border: 1px solid #333; border-radius: 6px; padding: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; }
         .legal-content p { margin-bottom: 14px; }
         .legal-content strong { color: #ccc; }
-        .ad-banner { background: #0f0f0f; border: 1px dashed #222; border-radius: 4px; padding: 16px; text-align: center; margin: 20px 0; min-height: 90px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
+        .mobile-menu { display: none; }
+        .sidebar-ad { display: block; }
+        @media (max-width: 640px) {
+          .sidebar-ad { display: none !important; }
+          .desktop-nav { display: none !important; }
+          .mobile-menu { display: flex !important; }
+          .main-layout { flex-direction: column !important; }
+        }
+        @media (min-width: 641px) {
+          .mobile-nav-drawer { display: none !important; }
+        }
       `}</style>
 
       {/* Auth Modal */}
       {showAuth && (
         <div className="modal-overlay" onClick={() => setShowAuth(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, marginBottom: 6 }}>
-              {authMode === "register" ? "Create Your Account" : "Sign In"}
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 900, marginBottom: 6 }}>
+              {authMode === "register" ? "Create Account" : "Sign In"}
             </h2>
-            <p style={{ fontSize: 13, color: "#555", marginBottom: 24, lineHeight: 1.6 }}>
-              {authMode === "register" ? "Choose a username that doesn't identify you personally. Never use your real name or email as your username." : "Welcome back."}
+            <p style={{ fontSize: 12, color: "#555", marginBottom: 20, lineHeight: 1.6 }}>
+              {authMode === "register" ? "Use a pseudonym — never your real name or eBay username." : "Welcome back."}
             </p>
             {authMode === "register" && (
-              <div style={{ background: "#1a1a0a", border: "1px solid #333", borderRadius: 3, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#888", lineHeight: 1.7 }}>
-                ⚠️ <strong style={{ color: "#aaa" }}>Privacy tip:</strong> Your username will appear on your posts. Use a pseudonym. Do not use your real name, eBay username, email, or any information that could identify you.
+              <div style={{ background: "#1a1a0a", border: "1px solid #333", borderRadius: 3, padding: "10px 14px", marginBottom: 16, fontSize: 11, color: "#888", lineHeight: 1.7 }}>
+                ⚠️ <strong style={{ color: "#aaa" }}>Privacy:</strong> Your username appears on posts. Use a pseudonym.
               </div>
             )}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -322,7 +321,7 @@ export default function App() {
                 <input type="password" placeholder="Min 6 characters" value={authForm.password} onChange={e => setAuthForm(p => ({ ...p, password: e.target.value }))} onKeyDown={e => e.key === "Enter" && handleAuth()} />
               </div>
               {authError && <div style={{ fontSize: 12, color: "#c0392b" }}>{authError}</div>}
-              <button className="btn-primary" onClick={handleAuth} style={{ padding: "12px", fontSize: 14, marginTop: 4 }}>
+              <button className="btn-primary" onClick={handleAuth} style={{ padding: "12px", fontSize: 14 }}>
                 {authMode === "register" ? "Create Account" : "Sign In"}
               </button>
               <div style={{ textAlign: "center", fontSize: 12, color: "#555" }}>
@@ -337,37 +336,72 @@ export default function App() {
       )}
 
       {/* Header */}
-      <div style={{ borderBottom: "1px solid #2a2a2a", padding: "0 24px", position: "sticky", top: 0, background: "#0d0d0d", zIndex: 100 }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ padding: "14px 0", cursor: "pointer" }} onClick={() => setView("feed")}>
-            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 900, color: "#e8e0d0" }}>
+      <div style={{ borderBottom: "1px solid #2a2a2a", padding: "0 16px", position: "sticky", top: 0, background: "#0d0d0d", zIndex: 100 }}>
+        <div style={{ maxWidth: 960, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 52 }}>
+          {/* Logo */}
+          <div style={{ cursor: "pointer", paddingTop: 10, paddingBottom: 10 }} onClick={() => navTo("feed")}>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: "#e8e0d0", lineHeight: 1.2 }}>
               <span style={{ color: "#c0392b" }}>⚑</span> BuyerBlacklist
             </div>
-            <div style={{ fontSize: 9, color: "#444", letterSpacing: "2px", textTransform: "uppercase", marginTop: 1 }}>The eBay Seller's Record</div>
+            <div style={{ fontSize: 8, color: "#444", letterSpacing: "2px", textTransform: "uppercase" }}>The eBay Seller's Record</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
-            <span className={`nav-item ${view === "feed" ? "active" : ""}`} onClick={() => setView("feed")}>Feed</span>
-            <span className={`nav-item ${view === "search" ? "active" : ""}`} onClick={() => setView("search")}>Search</span>
-            <span className={`nav-item ${view === "shame" ? "active" : ""}`} onClick={() => setView("shame")} style={{ color: view === "shame" ? "#e8e0d0" : "#c0392b" }}>💩 Hall of Shame</span>
-            <span className={`nav-item ${view === "report" ? "active" : ""}`} onClick={() => setView("report")}>+ Report</span>
+
+          {/* Desktop Nav */}
+          <div className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <span className={`nav-item ${view === "feed" ? "active" : ""}`} onClick={() => navTo("feed")}>Feed</span>
+            <span className={`nav-item ${view === "search" ? "active" : ""}`} onClick={() => navTo("search")}>Search</span>
+            <span className={`nav-item ${view === "shame" ? "active" : ""}`} onClick={() => navTo("shame")} style={{ color: view === "shame" ? "#e8e0d0" : "#c0392b" }}>💩 Hall of Shame</span>
+            <span className={`nav-item ${view === "report" ? "active" : ""}`} onClick={() => navTo("report")}>+ Report</span>
             {session ? (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: 8, paddingLeft: 12, borderLeft: "1px solid #222" }}>
-                <span style={{ fontSize: 12, color: "#666" }}>👤 {session.username}</span>
+                <span style={{ fontSize: 11, color: "#666" }}>👤 {session.username}</span>
                 <button className="btn-ghost" onClick={handleLogout} style={{ padding: "4px 10px", fontSize: 11 }}>Sign Out</button>
               </div>
             ) : (
               <button className="btn-ghost" onClick={() => { setShowAuth(true); setAuthMode("register"); }} style={{ marginLeft: 8, fontSize: 12, padding: "5px 12px" }}>Join / Sign In</button>
             )}
           </div>
+
+          {/* Mobile Nav Buttons */}
+          <div className="mobile-menu" style={{ alignItems: "center", gap: 8 }}>
+            <button className="btn-primary" onClick={() => navTo("report")} style={{ padding: "6px 12px", fontSize: 12 }}>+ Report</button>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              style={{ background: "transparent", border: "1px solid #333", color: "#888", padding: "6px 10px", borderRadius: 3, cursor: "pointer", fontSize: 18, lineHeight: 1 }}>
+              {mobileMenuOpen ? "✕" : "☰"}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <div className="mobile-nav-drawer" style={{ borderTop: "1px solid #1e1e1e", padding: "12px 0" }}>
+            {[["Feed", "feed"], ["Search", "search"], ["💩 Hall of Shame", "shame"]].map(([label, v]) => (
+              <div key={v} onClick={() => navTo(v)}
+                style={{ padding: "12px 16px", fontSize: 14, color: view === v ? "#e8e0d0" : "#888", borderLeft: view === v ? "2px solid #c0392b" : "2px solid transparent", cursor: "pointer" }}>
+                {label}
+              </div>
+            ))}
+            <div style={{ borderTop: "1px solid #1e1e1e", marginTop: 8, paddingTop: 8, padding: "8px 16px" }}>
+              {session ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 12, color: "#666" }}>👤 {session.username}</span>
+                  <button className="btn-ghost" onClick={() => { handleLogout(); setMobileMenuOpen(false); }} style={{ padding: "4px 10px", fontSize: 11 }}>Sign Out</button>
+                </div>
+              ) : (
+                <button className="btn-ghost" onClick={() => { setShowAuth(true); setAuthMode("register"); setMobileMenuOpen(false); }} style={{ width: "100%", fontSize: 13 }}>Join / Sign In</button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Top Ad Banner */}
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "8px 24px 0" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "8px 16px 0" }}>
         <AdBanner slot="horizontal" />
       </div>
 
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "16px 24px 32px", display: "flex", gap: 24 }}>
+      {/* Main Layout */}
+      <div className="main-layout" style={{ maxWidth: 960, margin: "0 auto", padding: "12px 16px 32px", display: "flex", gap: 20 }}>
 
         {/* Main Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -375,26 +409,31 @@ export default function App() {
           {/* FEED + SEARCH */}
           {(view === "feed" || view === "search") && (
             <>
-              <div style={{ marginBottom: 20, position: "relative" }}>
-                <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "#555" }}>🔍</span>
-                <input placeholder="Search by eBay username..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setView("search"); }} style={{ paddingLeft: 40, fontSize: 15 }} />
+              <div style={{ marginBottom: 16, position: "relative" }}>
+                <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#555" }}>🔍</span>
+                <input placeholder="Search by eBay username..." value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setView("search"); }} style={{ paddingLeft: 36, fontSize: 14 }} />
               </div>
-              <div style={{ display: "flex", gap: 24, marginBottom: 20, padding: "12px 0", borderBottom: "1px solid #1e1e1e" }}>
+
+              {/* Stats row */}
+              <div style={{ display: "flex", gap: 16, marginBottom: 16, padding: "10px 0", borderBottom: "1px solid #1e1e1e" }}>
                 {[["Total Reports", reports.length], ["High Risk", reports.filter(r => r.severity === "high").length], ["Verified", reports.filter(r => r.verified).length]].map(([label, val]) => (
                   <div key={label}>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#c0392b" }}>{val}</div>
-                    <div style={{ fontSize: 10, color: "#555", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#c0392b" }}>{val}</div>
+                    <div style={{ fontSize: 9, color: "#555", textTransform: "uppercase", letterSpacing: "1px" }}>{label}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
+
+              {/* Category filters — scrollable on mobile */}
+              <div style={{ display: "flex", gap: 5, marginBottom: 16, overflowX: "auto", paddingBottom: 4, WebkitOverflowScrolling: "touch" }}>
                 {CATEGORIES.map(cat => (
                   <button key={cat} onClick={() => setFilterCategory(cat)}
-                    style={{ background: filterCategory === cat ? "#c0392b" : "transparent", color: filterCategory === cat ? "white" : "#555", border: `1px solid ${filterCategory === cat ? "#c0392b" : "#222"}`, padding: "4px 10px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontFamily: "inherit", transition: "all 0.2s" }}>
+                    style={{ background: filterCategory === cat ? "#c0392b" : "transparent", color: filterCategory === cat ? "white" : "#555", border: `1px solid ${filterCategory === cat ? "#c0392b" : "#222"}`, padding: "4px 10px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap", flexShrink: 0 }}>
                     {cat}
                   </button>
                 ))}
               </div>
+
               {loading ? (
                 <div style={{ textAlign: "center", padding: "60px 0" }}>
                   <div className="spinner" style={{ margin: "0 auto 16px" }} />
@@ -409,33 +448,40 @@ export default function App() {
                   <div style={{ fontSize: 13, marginTop: 8, color: "#444" }}>This username has no reports — looks clean</div>
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {filteredReports.map((r, idx) => (
                     <>
-                      <div key={r.id} className="card" style={{ padding: "18px 20px" }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7, flexWrap: "wrap" }}>
-                              <span className="username-tag">{r.buyerUsername}</span>
-                              <span className="badge" style={{ background: `${SEVERITIES[r.severity]?.color}22`, color: SEVERITIES[r.severity]?.color, border: `1px solid ${SEVERITIES[r.severity]?.color}44` }}>{SEVERITIES[r.severity]?.label}</span>
-                              <span className="badge" style={{ background: "#1e1e1e", color: "#555", border: "1px solid #2a2a2a" }}>{r.category}</span>
-                              {r.verified && <span className="verified-badge">✓ Verified</span>}
-                            </div>
-                            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, fontWeight: 700, marginBottom: 7, cursor: "pointer" }} onClick={() => openDetail(reports.find(rep => rep.id === r.id) || r)}>
-                              {r.title}
-                            </div>
-                            <div style={{ fontSize: 13, color: "#666", lineHeight: 1.6, marginBottom: 10 }}>
-                              {r.description?.length > 140 ? r.description.slice(0, 140) + "..." : r.description}
-                            </div>
-                            <div style={{ display: "flex", gap: 12, fontSize: 11, color: "#444" }}>
-                              <span>by {r.author}</span><span>{r.date}</span>
-                              <span style={{ cursor: "pointer" }} onClick={() => openDetail(reports.find(rep => rep.id === r.id) || r)}>💬 comments</span>
-                              {r.images?.length > 0 && <span>📎 {r.images.length} photo{r.images.length > 1 ? "s" : ""}</span>}
-                            </div>
+                      <div key={r.id} className="card" style={{ padding: "14px" }}>
+                        {/* Top row: username + upvote */}
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", flex: 1, minWidth: 0 }}>
+                            <span className="username-tag">{r.buyerUsername}</span>
+                            {r.verified && <span className="verified-badge">✓ Verified</span>}
                           </div>
                           <button className={`upvote-btn ${upvoted[r.id] ? "active" : ""}`} onClick={() => handleUpvote(reports.find(rep => rep.id === r.id) || r)}>
-                            ▲ <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700 }}>{r.upvotes}</span>
+                            ▲ <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700 }}>{r.upvotes}</span>
                           </button>
+                        </div>
+                        {/* Badges */}
+                        <div style={{ display: "flex", gap: 5, marginBottom: 8, flexWrap: "wrap" }}>
+                          <span className="badge" style={{ background: `${SEVERITIES[r.severity]?.color}22`, color: SEVERITIES[r.severity]?.color, border: `1px solid ${SEVERITIES[r.severity]?.color}44` }}>{SEVERITIES[r.severity]?.label}</span>
+                          <span className="badge" style={{ background: "#1e1e1e", color: "#555", border: "1px solid #2a2a2a" }}>{r.category}</span>
+                        </div>
+                        {/* Title */}
+                        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, marginBottom: 6, cursor: "pointer", lineHeight: 1.3 }}
+                          onClick={() => openDetail(reports.find(rep => rep.id === r.id) || r)}>
+                          {r.title}
+                        </div>
+                        {/* Description */}
+                        <div style={{ fontSize: 13, color: "#666", lineHeight: 1.6, marginBottom: 8 }}>
+                          {r.description?.length > 120 ? r.description.slice(0, 120) + "..." : r.description}
+                        </div>
+                        {/* Meta */}
+                        <div style={{ display: "flex", gap: 10, fontSize: 11, color: "#444", flexWrap: "wrap" }}>
+                          <span>by {r.author}</span>
+                          <span>{r.date}</span>
+                          <span style={{ cursor: "pointer", color: "#555" }} onClick={() => openDetail(reports.find(rep => rep.id === r.id) || r)}>💬 comments</span>
+                          {r.images?.length > 0 && <span>📎 {r.images.length} photo{r.images.length > 1 ? "s" : ""}</span>}
                         </div>
                       </div>
                       {idx === 4 && <AdBanner slot="horizontal" />}
@@ -451,44 +497,44 @@ export default function App() {
             const r = norm(selectedReport);
             return (
               <div>
-                <button className="btn-ghost" onClick={() => setView("feed")} style={{ marginBottom: 20 }}>← Back</button>
-                <div className="card" style={{ padding: "28px" }}>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-                    <span className="username-tag" style={{ fontSize: 15 }}>{r.buyerUsername}</span>
+                <button className="btn-ghost" onClick={() => setView("feed")} style={{ marginBottom: 16, fontSize: 13 }}>← Back</button>
+                <div className="card" style={{ padding: "20px" }}>
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                    <span className="username-tag" style={{ fontSize: 13 }}>{r.buyerUsername}</span>
                     <span className="badge" style={{ background: `${SEVERITIES[r.severity]?.color}22`, color: SEVERITIES[r.severity]?.color, border: `1px solid ${SEVERITIES[r.severity]?.color}44` }}>{SEVERITIES[r.severity]?.label}</span>
                     <span className="badge" style={{ background: "#1e1e1e", color: "#555", border: "1px solid #2a2a2a" }}>{r.category}</span>
                     {r.verified && <span className="verified-badge">✓ Verified</span>}
                   </div>
-                  <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, marginBottom: 14, lineHeight: 1.3 }}>{r.title}</h1>
-                  <p style={{ fontSize: 14, color: "#999", lineHeight: 1.9, marginBottom: 20 }}>{r.description}</p>
+                  <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, marginBottom: 12, lineHeight: 1.3 }}>{r.title}</h1>
+                  <p style={{ fontSize: 14, color: "#999", lineHeight: 1.9, marginBottom: 16 }}>{r.description}</p>
                   {r.images?.length > 0 && (
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-                      {r.images.map((url, i) => <a key={i} href={url} target="_blank" rel="noreferrer"><img src={url} alt={`Evidence ${i + 1}`} style={{ width: 110, height: 110, objectFit: "cover", borderRadius: 4, border: "1px solid #333" }} /></a>)}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                      {r.images.map((url, i) => <a key={i} href={url} target="_blank" rel="noreferrer"><img src={url} alt={`Evidence ${i + 1}`} style={{ width: 90, height: 90, objectFit: "cover", borderRadius: 4, border: "1px solid #333" }} /></a>)}
                     </div>
                   )}
-                  <div style={{ display: "flex", gap: 14, alignItems: "center", paddingTop: 14, borderTop: "1px solid #1e1e1e" }}>
-                    <button className={`upvote-btn ${upvoted[r.id] ? "active" : ""}`} onClick={() => handleUpvote(selectedReport)} style={{ padding: "8px 18px" }}>
+                  <div style={{ display: "flex", gap: 12, alignItems: "center", paddingTop: 12, borderTop: "1px solid #1e1e1e", flexWrap: "wrap" }}>
+                    <button className={`upvote-btn ${upvoted[r.id] ? "active" : ""}`} onClick={() => handleUpvote(selectedReport)} style={{ padding: "8px 16px" }}>
                       ▲ Corroborate · {r.upvotes}
                     </button>
-                    <span style={{ fontSize: 12, color: "#444" }}>Posted by {r.author} · {r.date}</span>
+                    <span style={{ fontSize: 11, color: "#444" }}>Posted by {r.author} · {r.date}</span>
                   </div>
                 </div>
                 <AdBanner slot="horizontal" />
-                <div style={{ marginTop: 20 }}>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 17, marginBottom: 14, color: "#666" }}>Community Responses — {comments.length}</h3>
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, marginBottom: 12, color: "#666" }}>Community Responses — {comments.length}</h3>
                   {comments.map(c => (
-                    <div key={c.id} className="card" style={{ padding: "14px 18px", marginBottom: 8 }}>
+                    <div key={c.id} className="card" style={{ padding: "12px 14px", marginBottom: 8 }}>
                       <div style={{ fontSize: 13, color: "#999", lineHeight: 1.7 }}>{c.text}</div>
                       <div style={{ fontSize: 11, color: "#444", marginTop: 6 }}>by {c.author} · {c.created_at?.split("T")[0]}</div>
                     </div>
                   ))}
                   {session ? (
-                    <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
-                      <input placeholder="Share your experience with this buyer..." value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAddComment(r.id)} />
+                    <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+                      <input placeholder="Share your experience..." value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAddComment(r.id)} />
                       <button className="btn-primary" onClick={() => handleAddComment(r.id)} style={{ whiteSpace: "nowrap" }}>Post</button>
                     </div>
                   ) : (
-                    <div style={{ marginTop: 14, textAlign: "center", padding: "16px", background: "#111", border: "1px solid #222", borderRadius: 3, fontSize: 13, color: "#555" }}>
+                    <div style={{ marginTop: 12, textAlign: "center", padding: "14px", background: "#111", border: "1px solid #222", borderRadius: 3, fontSize: 13, color: "#555" }}>
                       <span style={{ color: "#c0392b", cursor: "pointer" }} onClick={() => setShowAuth(true)}>Sign in</span> to add a comment
                     </div>
                   )}
@@ -499,16 +545,16 @@ export default function App() {
 
           {/* REPORT VIEW */}
           {view === "report" && (
-            <div style={{ maxWidth: 600 }}>
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, fontWeight: 900, marginBottom: 8 }}>File a Report</h1>
-              <p style={{ color: "#555", fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>Share your experience. You are the author and publisher of this content. Be factual and accurate — false reports may expose you to legal liability.</p>
+            <div>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 900, marginBottom: 6 }}>File a Report</h1>
+              <p style={{ color: "#555", fontSize: 13, marginBottom: 20, lineHeight: 1.7 }}>Share your experience. Be factual — false reports may expose you to legal liability.</p>
               {!session && (
-                <div style={{ background: "#1a100a", border: "1px solid #3a1a0a", padding: "14px 16px", borderRadius: 3, marginBottom: 20, fontSize: 13, color: "#888" }}>
-                  You must <span style={{ color: "#c0392b", cursor: "pointer" }} onClick={() => setShowAuth(true)}>sign in or create an account</span> to file a report.
+                <div style={{ background: "#1a100a", border: "1px solid #3a1a0a", padding: "12px 14px", borderRadius: 3, marginBottom: 16, fontSize: 13, color: "#888" }}>
+                  <span style={{ color: "#c0392b", cursor: "pointer" }} onClick={() => setShowAuth(true)}>Sign in or create an account</span> to file a report.
                 </div>
               )}
-              {submitSuccess && <div style={{ background: "#0d2e0d", border: "1px solid #2d6a2d", padding: "14px", borderRadius: 3, marginBottom: 20, color: "#4caf50", fontSize: 13 }}>✓ Report published. Redirecting...</div>}
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {submitSuccess && <div style={{ background: "#0d2e0d", border: "1px solid #2d6a2d", padding: "12px", borderRadius: 3, marginBottom: 16, color: "#4caf50", fontSize: 13 }}>✓ Report published. Redirecting...</div>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Bad Buyer Username *</label>
                   <input placeholder="e.g. bargainhunter99" value={newReport.buyerUsername} onChange={e => setNewReport(p => ({ ...p, buyerUsername: e.target.value }))} />
@@ -517,47 +563,44 @@ export default function App() {
                   <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Report Title *</label>
                   <input placeholder="Brief summary of what happened" value={newReport.title} onChange={e => setNewReport(p => ({ ...p, title: e.target.value }))} />
                 </div>
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Category</label>
-                    <select value={newReport.category} onChange={e => setNewReport(p => ({ ...p, category: e.target.value }))}>
-                      {CATEGORIES.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Risk Level</label>
-                    <select value={newReport.severity} onChange={e => setNewReport(p => ({ ...p, severity: e.target.value }))}>
-                      <option value="high">High Risk</option>
-                      <option value="medium">Medium Risk</option>
-                      <option value="low">Low Risk</option>
-                    </select>
-                  </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Category</label>
+                  <select value={newReport.category} onChange={e => setNewReport(p => ({ ...p, category: e.target.value }))}>
+                    {CATEGORIES.filter(c => c !== "All").map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Risk Level</label>
+                  <select value={newReport.severity} onChange={e => setNewReport(p => ({ ...p, severity: e.target.value }))}>
+                    <option value="high">High Risk</option>
+                    <option value="medium">Medium Risk</option>
+                    <option value="low">Low Risk</option>
+                  </select>
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Your Account *</label>
-                  <textarea placeholder="Describe exactly what happened. Include dates, amounts, and what eBay's response was. Be factual." value={newReport.description} onChange={e => setNewReport(p => ({ ...p, description: e.target.value }))} rows={6} style={{ resize: "vertical" }} />
+                  <textarea placeholder="Describe exactly what happened. Include dates, amounts, and eBay's response. Be factual." value={newReport.description} onChange={e => setNewReport(p => ({ ...p, description: e.target.value }))} rows={5} style={{ resize: "vertical" }} />
                 </div>
                 <div>
                   <label style={{ fontSize: 11, color: "#555", textTransform: "uppercase", letterSpacing: "1px", display: "block", marginBottom: 5 }}>Screenshots / Evidence (optional)</label>
-                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, border: "2px dashed #222", borderRadius: 4, padding: "18px", cursor: "pointer", color: "#555", fontSize: 13, transition: "border-color 0.2s" }}
-                    onMouseOver={e => e.currentTarget.style.borderColor = "#c0392b"} onMouseOut={e => e.currentTarget.style.borderColor = "#222"}>
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, border: "2px dashed #222", borderRadius: 4, padding: "16px", cursor: "pointer", color: "#555", fontSize: 13 }}>
                     <span style={{ fontSize: 20 }}>📎</span>
-                    <span>Upload screenshots or photos<br /><span style={{ fontSize: 11, color: "#444" }}>PNG, JPG, GIF up to 10MB each</span></span>
+                    <span>Upload screenshots or photos<br /><span style={{ fontSize: 11, color: "#444" }}>PNG, JPG, GIF up to 10MB</span></span>
                     <input type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: "none" }} />
                   </label>
                   {uploadedImages.length > 0 && (
-                    <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                       {uploadedImages.map((img, i) => (
-                        <div key={i} style={{ position: "relative", width: 72, height: 72 }}>
-                          <img src={img.url} alt={img.name} style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 3, border: "1px solid #333" }} />
+                        <div key={i} style={{ position: "relative", width: 64, height: 64 }}>
+                          <img src={img.url} alt={img.name} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 3, border: "1px solid #333" }} />
                           <button onClick={() => removeImage(i)} style={{ position: "absolute", top: -5, right: -5, background: "#c0392b", border: "none", color: "white", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", fontSize: 10 }}>✕</button>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div style={{ background: "#0d0d0d", border: "1px solid #1e1e1e", padding: "12px 14px", borderRadius: 3, fontSize: 11, color: "#444", lineHeight: 1.8 }}>
-                  By submitting you confirm this is your honest, firsthand account. You are the publisher and solely responsible for this content. False reports may expose you to legal liability. See our <span style={{ color: "#666", cursor: "pointer", textDecoration: "underline" }} onClick={() => setView("disclaimer")}>full disclaimer</span>.
+                <div style={{ background: "#0d0d0d", border: "1px solid #1e1e1e", padding: "10px 12px", borderRadius: 3, fontSize: 11, color: "#444", lineHeight: 1.8 }}>
+                  By submitting you confirm this is your honest, firsthand account. See our <span style={{ color: "#666", cursor: "pointer", textDecoration: "underline" }} onClick={() => setView("disclaimer")}>full disclaimer</span>.
                 </div>
                 <button className="btn-primary" onClick={handleSubmitReport} disabled={submitting || !session} style={{ padding: "13px", fontSize: 14 }}>
                   {submitting ? (uploadingImages ? "Uploading images..." : "Publishing...") : "Publish Report"}
@@ -580,45 +623,45 @@ export default function App() {
             const Poop = ({ size = 40 }) => <span style={{ fontSize: size }}>💩</span>;
             return (
               <div>
-                <div style={{ marginBottom: 28 }}>
-                  <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, marginBottom: 6 }}>💩 Hall of Shame</h1>
-                  <p style={{ color: "#555", fontSize: 13 }}>Most reported & corroborated bad buyers. Ranked by reports + upvotes.</p>
+                <div style={{ marginBottom: 20 }}>
+                  <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, marginBottom: 4 }}>💩 Hall of Shame</h1>
+                  <p style={{ color: "#555", fontSize: 13 }}>Most reported & corroborated bad buyers.</p>
                 </div>
-                <div style={{ display: "flex", gap: 10, marginBottom: 28, alignItems: "flex-end" }}>
+                {/* Podium */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 24, alignItems: "flex-end" }}>
                   {[ranked[1], ranked[0], ranked[2]].map((buyer, i) => {
                     if (!buyer) return null;
-                    const heights = ["150px", "190px", "130px"]; const pos = [2, 1, 3];
+                    const heights = ["120px", "155px", "105px"]; const pos = [2, 1, 3];
                     return (
                       <div key={buyer.username} style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ marginBottom: 8 }}>
-                          <Poop size={i === 1 ? 44 : 30} />
-                          <div style={{ fontFamily: "'Courier New', monospace", fontSize: i === 1 ? 14 : 12, color: "#e0c080", background: "#1e1e1e", border: "1px solid #333", padding: "3px 8px", borderRadius: 3, display: "inline-block", marginTop: 4 }}>{buyer.username}</div>
-                          <div style={{ fontSize: 10, color: "#555", marginTop: 3 }}>{buyer.reportCount} reports · {buyer.totalUpvotes} votes</div>
+                        <div style={{ marginBottom: 6 }}>
+                          <Poop size={i === 1 ? 36 : 26} />
+                          <div style={{ fontFamily: "'Courier New', monospace", fontSize: i === 1 ? 11 : 10, color: "#e0c080", background: "#1e1e1e", border: "1px solid #333", padding: "2px 6px", borderRadius: 3, display: "inline-block", marginTop: 3, wordBreak: "break-all" }}>{buyer.username}</div>
+                          <div style={{ fontSize: 9, color: "#555", marginTop: 2 }}>{buyer.reportCount}r · {buyer.totalUpvotes}v</div>
                         </div>
                         <div style={{ height: heights[i], background: i === 1 ? "#3a0a0a" : "#1e1212", border: `1px solid ${i === 1 ? "#c0392b" : "#2a1a1a"}`, borderRadius: "4px 4px 0 0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: i === 1 ? 26 : 20, fontWeight: 900, color: i === 1 ? "#c0392b" : "#662222" }}>#{pos[i]}</div>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: i === 1 ? 22 : 17, fontWeight: 900, color: i === 1 ? "#c0392b" : "#662222" }}>#{pos[i]}</div>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {ranked.map((buyer, idx) => (
-                    <div key={buyer.username} className="card" style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }}
+                    <div key={buyer.username} className="card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
                       onClick={() => { setSearchQuery(buyer.username); setView("search"); }}>
-                      <div style={{ width: 28, textAlign: "center", fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 900, color: idx < 3 ? "#c0392b" : "#333" }}>
-                        {idx < 3 ? <Poop size={22} /> : `#${idx + 1}`}
+                      <div style={{ width: 24, textAlign: "center", fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 900, color: idx < 3 ? "#c0392b" : "#333", flexShrink: 0 }}>
+                        {idx < 3 ? <Poop size={18} /> : `#${idx + 1}`}
                       </div>
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <span className="username-tag">{buyer.username}</span>
-                        <div style={{ fontSize: 11, color: "#444", marginTop: 5, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ fontSize: 11, color: "#444", marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <span style={{ color: "#c0392b" }}>⚑ {buyer.reportCount} reports</span>
                           <span>▲ {buyer.totalUpvotes} votes</span>
                           {buyer.highCount > 0 && <span style={{ color: "#ff4444" }}>🔴 {buyer.highCount} high-risk</span>}
                         </div>
-                        <div style={{ fontSize: 10, color: "#333", marginTop: 3 }}>{[...buyer.categories].join(" · ")}</div>
                       </div>
-                      <span style={{ fontSize: 11, color: "#333" }}>View →</span>
+                      <span style={{ fontSize: 11, color: "#333", flexShrink: 0 }}>→</span>
                     </div>
                   ))}
                 </div>
@@ -628,34 +671,28 @@ export default function App() {
 
           {/* DISCLAIMER PAGE */}
           {view === "disclaimer" && (
-            <div style={{ maxWidth: 700 }}>
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, marginBottom: 6 }}>Disclaimer & Legal Notice</h1>
-              <div style={{ fontSize: 11, color: "#444", marginBottom: 32 }}>Last updated: May 2026</div>
+            <div>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, marginBottom: 6 }}>Disclaimer & Legal Notice</h1>
+              <div style={{ fontSize: 11, color: "#444", marginBottom: 24 }}>Last updated: May 2026</div>
               <div className="legal-content">
                 <Section title="User-Generated Content Platform">
                   <p>BuyerBlacklist.com is an interactive computer service and public forum. All content published on this platform is authored exclusively by third-party users. BuyerBlacklist.com does not create, author, or initiate any of the content posted by its users.</p>
                 </Section>
                 <Section title="Section 230 — Communications Decency Act">
                   <p>This platform operates under the protections afforded by <strong>47 U.S.C. § 230 of the Communications Decency Act</strong>, which provides that: "No provider or user of an interactive computer service shall be treated as the publisher or speaker of any information provided by another information content provider."</p>
-                  <p>BuyerBlacklist.com is an "interactive computer service" as defined under 47 U.S.C. § 230(f)(2). We are not the "information content provider" of user-submitted reports, comments, or other content. Accordingly, we are not liable for content created by our users.</p>
-                  <p>This protection has been consistently upheld in federal courts, including <strong>Zeran v. America Online, Inc., 129 F.3d 327 (4th Cir. 1997)</strong> and subsequent decisions establishing broad immunity for online platforms hosting third-party content.</p>
+                  <p>This protection has been consistently upheld in federal courts, including <strong>Zeran v. America Online, Inc., 129 F.3d 327 (4th Cir. 1997)</strong>.</p>
                 </Section>
                 <Section title="No Endorsement or Verification">
-                  <p>BuyerBlacklist.com does not verify, endorse, guarantee, or warrant the accuracy, completeness, or reliability of any user-submitted content. The appearance of a username on this platform does not constitute a finding of fact, legal determination, official record, or any representation by BuyerBlacklist.com regarding that individual's conduct.</p>
-                  <p>All reports represent the personal opinions and firsthand experiences of the individual authors. The views expressed are solely those of the posting user and do not represent the views, opinions, or positions of BuyerBlacklist.com, its owners, operators, employees, or affiliates.</p>
+                  <p>BuyerBlacklist.com does not verify, endorse, guarantee, or warrant the accuracy of any user-submitted content. The appearance of a username on this platform does not constitute a finding of fact or legal determination.</p>
                 </Section>
                 <Section title="User Responsibility">
-                  <p>By posting content, users represent and warrant that: (1) the content is their honest, firsthand account of personal experience; (2) the content does not contain knowingly false statements of fact; (3) the content does not constitute harassment, threats, or doxxing; and (4) they accept full legal responsibility for the content they publish.</p>
-                  <p>Users who post false, fabricated, or maliciously misleading content may be subject to civil liability for defamation, tortious interference, or other claims. BuyerBlacklist.com reserves the right to remove content at its sole discretion.</p>
+                  <p>By posting content, users represent that the content is their honest, firsthand account and they accept full legal responsibility for what they publish. Users who post false content may be subject to civil liability.</p>
                 </Section>
                 <Section title="Content Removal Requests">
-                  <p>If you believe content published about you is false and defamatory, you may submit a written removal request to <strong>legal@badbuyerblacklist.com</strong>. Please include: (1) the specific URL of the content; (2) your identity and relationship to the subject matter; (3) a detailed explanation of why the content is false; and (4) any supporting documentation. We will review all requests in good faith.</p>
-                </Section>
-                <Section title="No Legal Advice">
-                  <p>Nothing on this platform constitutes legal advice. BuyerBlacklist.com is not a law firm and does not provide legal services. If you believe you have a legal claim related to content on this platform, consult a licensed attorney in your jurisdiction.</p>
+                  <p>Submit written removal requests to <strong>legal@badbuyerblacklist.com</strong> with the URL, your identity, explanation of why it's false, and supporting documentation.</p>
                 </Section>
                 <Section title="Limitation of Liability">
-                  <p>To the maximum extent permitted by applicable law, BuyerBlacklist.com and its operators shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of this platform or reliance on any content herein.</p>
+                  <p>To the maximum extent permitted by law, BuyerBlacklist.com and its operators shall not be liable for any damages arising from your use of this platform.</p>
                 </Section>
               </div>
             </div>
@@ -663,46 +700,36 @@ export default function App() {
 
           {/* PRIVACY POLICY PAGE */}
           {view === "privacy" && (
-            <div style={{ maxWidth: 700 }}>
-              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 900, marginBottom: 6 }}>Privacy Policy</h1>
-              <div style={{ fontSize: 11, color: "#444", marginBottom: 32 }}>Last updated: May 2026</div>
+            <div>
+              <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900, marginBottom: 6 }}>Privacy Policy</h1>
+              <div style={{ fontSize: 11, color: "#444", marginBottom: 24 }}>Last updated: May 2026</div>
               <div className="legal-content">
                 <Section title="Information We Collect">
-                  <p><strong>Account information:</strong> When you create an account, we collect a username and hashed password. We strongly encourage you to use a pseudonym that does not identify you personally.</p>
-                  <p><strong>Content you post:</strong> Reports, comments, and uploaded images are stored and associated with your username.</p>
-                  <p><strong>Technical data:</strong> We may collect standard server logs including IP addresses, browser type, and access timestamps for security and abuse prevention purposes.</p>
-                  <p><strong>Cookies:</strong> We use minimal cookies and local storage for session management and advertising (Google AdSense). See the Advertising section below.</p>
+                  <p><strong>Account information:</strong> Username and hashed password. Use a pseudonym.</p>
+                  <p><strong>Content you post:</strong> Reports, comments, and images stored with your username.</p>
+                  <p><strong>Technical data:</strong> Standard server logs for security purposes.</p>
+                  <p><strong>Cookies:</strong> Minimal cookies for session management and Google AdSense advertising.</p>
                 </Section>
                 <Section title="How We Use Your Information">
-                  <p>We use collected information to: operate and maintain the platform; associate your posts with your chosen username; prevent abuse and fraudulent activity; and improve the platform over time. We do not sell your personal information to third parties.</p>
-                </Section>
-                <Section title="Usernames & Anonymity">
-                  <p>Your username is the only identifier displayed publicly on the platform. We strongly recommend selecting a username that does not reveal your real name, location, eBay account, or any other personally identifiable information. We are not responsible for any loss of anonymity resulting from a username you choose.</p>
+                  <p>To operate the platform, associate posts with usernames, prevent abuse, and improve the service. We do not sell your personal information.</p>
                 </Section>
                 <Section title="Advertising — Google AdSense">
-                  <p>This site uses Google AdSense (<strong>Publisher ID: {ADSENSE_PUB}</strong>) to display advertisements. Google AdSense uses cookies and web beacons to serve ads based on your prior visits to this and other websites. Google's use of advertising cookies enables it and its partners to serve ads based on your visit to our site.</p>
-                  <p>You may opt out of personalized advertising by visiting <strong>www.aboutads.info</strong> or <strong>www.google.com/settings/ads</strong>. For more information on how Google uses data, see <strong>policies.google.com/technologies/partner-sites</strong>.</p>
+                  <p>This site uses Google AdSense (<strong>Publisher ID: {ADSENSE_PUB}</strong>). Google uses cookies to serve personalized ads. Opt out at <strong>www.aboutads.info</strong>.</p>
                 </Section>
                 <Section title="Data Retention">
-                  <p>User accounts and posted content are retained indefinitely unless you request deletion. To request deletion of your account and associated content, contact us at <strong>privacy@badbuyerblacklist.com</strong>.</p>
-                </Section>
-                <Section title="Third-Party Services">
-                  <p>This platform uses Supabase for database and storage services. Supabase may process your data on servers located in the United States. Please review Supabase's privacy policy at <strong>supabase.com/privacy</strong>.</p>
-                </Section>
-                <Section title="Children's Privacy">
-                  <p>This platform is not directed at individuals under the age of 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided information to us, contact us immediately.</p>
+                  <p>Content retained indefinitely unless deletion is requested at <strong>privacy@badbuyerblacklist.com</strong>.</p>
                 </Section>
                 <Section title="Contact">
-                  <p>Privacy inquiries: <strong>privacy@badbuyerblacklist.com</strong><br />Legal / removal requests: <strong>legal@badbuyerblacklist.com</strong></p>
+                  <p>Privacy: <strong>privacy@badbuyerblacklist.com</strong><br />Legal: <strong>legal@badbuyerblacklist.com</strong></p>
                 </Section>
               </div>
             </div>
           )}
         </div>
 
-        {/* Sidebar Ad */}
-        <div style={{ width: 180, flexShrink: 0, paddingTop: 4 }}>
-          <div className="ad-banner" style={{ minHeight: 600, flexDirection: "column" }}>
+        {/* Sidebar Ad — desktop only */}
+        <div className="sidebar-ad" style={{ width: 180, flexShrink: 0, paddingTop: 4 }}>
+          <div style={{ background: "#0f0f0f", border: "1px dashed #222", borderRadius: 4, padding: 12, textAlign: "center", minHeight: 600, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 9, color: "#2a2a2a", textTransform: "uppercase", letterSpacing: "1px" }}>Advertisement</div>
             <ins className="adsbygoogle"
               style={{ display: "block", width: 160, height: 600 }}
@@ -714,18 +741,17 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <div style={{ borderTop: "1px solid #111", padding: "20px 24px", textAlign: "center" }}>
+      <div style={{ borderTop: "1px solid #111", padding: "16px", textAlign: "center" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 8, flexWrap: "wrap" }}>
             {[["Privacy Policy", "privacy"], ["Disclaimer", "disclaimer"], ["Terms of Use", "disclaimer"]].map(([label, target]) => (
-              <span key={label} style={{ fontSize: 11, color: "#444", cursor: "pointer", textDecoration: "underline" }} onClick={() => setView(target)}>{label}</span>
+              <span key={label} style={{ fontSize: 11, color: "#444", cursor: "pointer", textDecoration: "underline" }} onClick={() => navTo(target)}>{label}</span>
             ))}
             <a href="mailto:legal@badbuyerblacklist.com" style={{ fontSize: 11, color: "#444" }}>legal@badbuyerblacklist.com</a>
           </div>
           <div style={{ fontSize: 10, color: "#2a2a2a", letterSpacing: "1px", lineHeight: 1.8 }}>
-            BUYERBLACKLIST.COM · ALL CONTENT IS USER-GENERATED AND PUBLISHED BY ITS AUTHORS<br />
-            THIS PLATFORM OPERATES UNDER 47 U.S.C. § 230 OF THE COMMUNICATIONS DECENCY ACT<br />
-            © {new Date().getFullYear()} BADBUYERBLACKLIST.COM
+            BUYERBLACKLIST.COM · ALL CONTENT IS USER-GENERATED<br />
+            47 U.S.C. § 230 · © {new Date().getFullYear()} BADBUYERBLACKLIST.COM
           </div>
         </div>
       </div>
